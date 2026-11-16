@@ -1,0 +1,47 @@
+name: Frontend CI
+
+on:
+  push:
+    paths: ["frontend/**", ".github/workflows/frontend-ci.yml"]
+  pull_request:
+    paths: ["frontend/**", ".github/workflows/frontend-ci.yml"]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        # Uses the lockfile when it is committed; falls back to a normal install otherwise.
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+      - name: ESLint
+        run: npm run lint
+      - name: Prettier check
+        run: npm run format:check
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Unit and component tests (Vitest)
+        run: npm test
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7

@@ -1,0 +1,5 @@
+-r ../requirements.txt
+pytest>=8.3
+pytest-cov>=6.0
+ruff>=0.8
+reportlab>=4.2   # generates synthetic PDF fixtures for tests

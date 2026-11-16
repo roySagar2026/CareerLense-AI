@@ -1,0 +1,9 @@
+# Only honoured when building with frontend/ as the context. The documented build uses the
+# repository root and frontend/Dockerfile.dockerignore instead.
+node_modules
+dist
+coverage
+playwright-report
+test-results
+.env
+.env.*

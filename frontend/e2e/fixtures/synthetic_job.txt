@@ -1,0 +1,20 @@
+Backend Engineer
+
+About us
+We are a fintech startup building payment tools.
+
+Responsibilities
+- Design and build REST APIs in Python for our payment platform
+- Deploy services using Docker and Kubernetes on AWS
+- Write unit tests and review code from teammates
+
+Requirements
+- 3+ years of experience in backend development
+- Strong Python and SQL skills
+- Experience with Django or FastAPI
+- Hands-on experience with PostgreSQL
+- Bachelor's degree in Computer Science or equivalent
+
+Nice to have
+- Terraform
+- AWS Certified Solutions Architect

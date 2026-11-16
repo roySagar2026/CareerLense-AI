@@ -1,0 +1,48 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+frontend/.vite/
+*.tsbuildinfo
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.sqlite3
+*.db
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+# Vercel / Netlify
+.vercel
+.netlify
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE (keep shared VS Code settings)
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json

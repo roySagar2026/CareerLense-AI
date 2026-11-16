@@ -1,0 +1,20 @@
+# Normalise line endings to LF in the repository (important on Windows).
+* text=auto eol=lf
+
+# Windows scripts may use CRLF; shell scripts and Dockerfiles must stay LF.
+*.ps1 text eol=crlf
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.dockerignore text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.docx binary
+*.woff binary
+*.woff2 binary

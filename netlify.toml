@@ -1,0 +1,40 @@
+# Netlify alternative: FRONTEND ONLY.
+# Netlify Functions cannot run this Python/FastAPI backend, so the API must be
+# hosted elsewhere (Vercel project, container host, ...). See docs/deployment-guide.md.
+
+[build]
+  command = "cd frontend && npm install --no-audit --no-fund && npm run build"
+  publish = "frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Proxy the API to the separately hosted backend so the browser stays same-origin
+# (required for the httpOnly refresh cookie). Replace the URL, then uncomment.
+# Must come BEFORE the SPA fallback.
+# [[redirects]]
+#   from = "/api/*"
+#   to = "https://YOUR-BACKEND-HOST.example.com/api/:splat"
+#   status = 200
+#   force = true
+
+# SPA fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'; frame-src 'self' blob:; object-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

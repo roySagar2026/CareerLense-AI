@@ -1,0 +1,34 @@
+[project]
+name = "careerlens-backend"
+version = "1.0.0"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "SIM", "RUF"]
+ignore = [
+  "S101",   # assert is fine in tests
+  "B008",   # FastAPI Depends() in defaults
+  "RUF001", "RUF002", "RUF003",  # intentional unicode punctuation in user-facing text
+  "S311",
+  "UP046", "UP047",  # keep Generic[T] for pydantic compatibility
+  "S105",   # "bearer" token_type is not a password
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S108", "E501"]
+"app/nlp/taxonomy_data.py" = ["E501"]
+"app/nlp/recommendations.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"

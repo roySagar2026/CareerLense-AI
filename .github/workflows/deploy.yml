@@ -1,0 +1,116 @@
+name: Deploy (Vercel)
+
+# Staging: every push to `main` deploys a preview URL that is smoke-tested.
+# Production: a version tag (v1.2.3) or a manual run promoting to production.
+# All credentials live in GitHub Actions secrets and are never printed.
+#
+# Required repository secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# Optional: VERCEL_BYPASS_SECRET (smoke-testing previews behind Deployment Protection),
+#           MIGRATION_DATABASE_URL (Postgres URL used to run `alembic upgrade head` before deploying)
+# Runtime env vars (DATABASE_URL, JWT_SECRET, ...) are set in the Vercel project, not here.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Where to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  frontend-ci:
+    uses: ./.github/workflows/frontend-ci.yml
+  backend-ci:
+    uses: ./.github/workflows/backend-ci.yml
+
+  staging:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.target == 'staging')
+    needs: [frontend-ci, backend-ci]
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Apply database migrations (only if the MIGRATION_DATABASE_URL secret is set)
+        env:
+          DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+        run: |
+          if [ -n "$DATABASE_URL" ]; then
+            pip install -r requirements.txt
+            (cd backend && alembic upgrade head)
+          else
+            echo "MIGRATION_DATABASE_URL not set; skipping. Run 'alembic upgrade head' manually (see docs/deployment-guide.md)."
+          fi
+      - name: Pull Vercel settings
+        run: npx --yes vercel@latest pull --yes --environment=preview --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Build
+        run: npx --yes vercel@latest build --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Deploy preview
+        id: deploy
+        run: |
+          url=$(npx --yes vercel@latest deploy --prebuilt --token="${{ secrets.VERCEL_TOKEN }}")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Staging deployed: $url"
+      - name: Health and smoke test
+        env:
+          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_BYPASS_SECRET }}
+        run: bash infrastructure/scripts/smoke-test.sh "${{ steps.deploy.outputs.url }}"
+
+  production:
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.target == 'production')
+    needs: [frontend-ci, backend-ci]
+    runs-on: ubuntu-latest
+    environment: production # configure required reviewers on this environment for manual approval
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Apply database migrations (only if the MIGRATION_DATABASE_URL secret is set)
+        env:
+          DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+        run: |
+          if [ -n "$DATABASE_URL" ]; then
+            pip install -r requirements.txt
+            (cd backend && alembic upgrade head)
+          else
+            echo "MIGRATION_DATABASE_URL not set; skipping. Run 'alembic upgrade head' manually (see docs/deployment-guide.md)."
+          fi
+      - name: Pull Vercel settings
+        run: npx --yes vercel@latest pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Build
+        run: npx --yes vercel@latest build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Deploy to production
+        id: deploy
+        run: |
+          url=$(npx --yes vercel@latest deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Production deployed: $url"
+      - name: Health and smoke test
+        run: bash infrastructure/scripts/smoke-test.sh "${{ steps.deploy.outputs.url }}"
+      - name: Rollback hint
+        if: failure()
+        run: echo "Smoke test failed. Roll back with 'vercel rollback' or promote the previous deployment in the Vercel dashboard (see docs/deployment-guide.md)."

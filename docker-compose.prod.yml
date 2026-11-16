@@ -1,0 +1,63 @@
+# Production-style stack for a single container host using prebuilt GHCR images.
+#   export GITHUB_REPOSITORY_OWNER=<lowercase owner>  IMAGE_TAG=<version>   (or put them in .env)
+#   docker compose -f docker-compose.prod.yml --env-file .env pull
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d
+# Only the frontend (nginx) container is published; the backend and database stay on the
+# internal network. Terminate TLS in front of it (reverse proxy / load balancer): with
+# APP_ENV=production the refresh cookie is Secure and will not work over plain http.
+name: careerlens
+
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  backend:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:?set GITHUB_REPOSITORY_OWNER}/careerlens-backend:${IMAGE_TAG:-latest}
+    restart: always
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-15}
+      REFRESH_TOKEN_DAYS: ${REFRESH_TOKEN_DAYS:-7}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      APP_BASE_URL: ${APP_BASE_URL:?set APP_BASE_URL}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-4}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      OCR_ENABLED: ${OCR_ENABLED:-false}
+      LLM_PROVIDER: ${LLM_PROVIDER:-none}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [internal]
+
+  frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/careerlens-frontend:${IMAGE_TAG:-latest}
+    restart: always
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [internal]
+
+volumes:
+  pgdata:
+
+networks:
+  internal:

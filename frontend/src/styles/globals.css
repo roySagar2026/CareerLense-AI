@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens: space-separated RGB triplets so Tailwind can apply alpha. */
+:root {
+  /* Soft-light design tokens (space-separated RGB so Tailwind can apply alpha). */
+  --background: 244 246 250; /* #F4F6FA main background */
+  --surface: 241 245 249; /* #F1F5F9 inset panels, hover fills */
+  --card: 255 255 255; /* #FFFFFF cards, modals */
+  --primary: 57 120 246; /* #3978F6 electric blue */
+  --primary-hover: 40 100 219; /* #2864DB */
+  --primary-foreground: 255 255 255;
+  --accent: 40 100 219; /* links and info use the deeper blue */
+  --ink: 37 50 71; /* #253247 slate: navigation, emphasis */
+  --success: 21 128 61;
+  --warning: 180 83 9;
+  --danger: 220 38 38;
+  --foreground: 23 32 51; /* #172033 primary text */
+  --muted: 100 116 139; /* #64748B secondary text */
+  --border: 226 232 240; /* #E2E8F0 */
+  --shadow-color: 23 32 51;
+  color-scheme: light;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+  * {
+    @apply border-border;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-background;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading tracking-tight text-foreground;
+  }
+  code,
+  kbd,
+  samp {
+    @apply font-mono;
+  }
+  ::selection {
+    background: rgb(var(--primary) / 0.2);
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgb(var(--border));
+    border-radius: 999px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

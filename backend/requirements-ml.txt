@@ -1,0 +1,8 @@
+# OPTIONAL heavy NLP stack for container deployments (not used on Vercel).
+# Install on top of ../requirements.txt, then implement/enable an embedding-based
+# SemanticMatcher (see app/nlp/semantic_matcher.py and docs/architecture.md).
+-r ../requirements.txt
+spacy>=3.7,<4.0
+sentence-transformers>=3.0,<4.0
+scikit-learn>=1.5,<2.0
+nltk>=3.9,<4.0

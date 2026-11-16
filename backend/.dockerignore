@@ -1,0 +1,10 @@
+# Only honoured when building with backend/ as the context. The documented build uses the
+# repository root and backend/Dockerfile.dockerignore instead.
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+tests
+.env
+.coverage
+htmlcov
